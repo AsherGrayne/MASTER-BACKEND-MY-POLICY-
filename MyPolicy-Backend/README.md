@@ -133,8 +133,59 @@ POST /api/bff/auth/login
 |----------|-------------|
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Complete system architecture and design |
 | [API_REFERENCE.md](./bff-service/API_REFERENCE.md) | BFF API endpoints with examples |
+| [SEQUENCE_DIAGRAMS.md](./SEQUENCE_DIAGRAMS.md) | Complete API sequence diagrams |
+| [COMPLETE_API_SEQUENCE.md](./COMPLETE_API_SEQUENCE.md) | Master sequence diagram - All services connected |
 | [PHASE3_IMPLEMENTATION.md](./PHASE3_IMPLEMENTATION.md) | Coverage insights implementation details |
 | [SEQUENCE_COMPLIANCE.md](./SEQUENCE_COMPLIANCE.md) | API sequence diagram compliance |
+
+---
+
+## 🔀 API Sequence Flow Diagrams
+
+The system implements comprehensive end-to-end flows with all 7 microservices interacting seamlessly. Below are the key sequence flows:
+
+### 📊 Complete API Sequence Diagram
+
+![API Sequence Details](./API-SEQUENCE%20DETAILS.png)
+
+Our architecture follows a detailed sequence diagram showing all service interactions:
+
+**Key Flows Covered:**
+1. **User Registration & Authentication** - Customer Service with JWT generation
+2. **Metadata Configuration** - Admin setup for insurer field mappings
+3. **File Upload & Ingestion** - Async file processing with job tracking
+4. **Data Processing Pipeline** - Metadata-driven transformation
+5. **Customer Matching** - Fuzzy matching with PAN/Email/Mobile
+6. **Policy Storage** - Linking policies to customers
+7. **Portfolio Aggregation** - BFF combines customer + policies
+8. **Coverage Insights** - Gap analysis and recommendations
+
+**Visual Diagrams Available:**
+- [SEQUENCE_DIAGRAMS.md](./SEQUENCE_DIAGRAMS.md) - Individual flow diagrams (6 detailed sequences)
+- [COMPLETE_API_SEQUENCE.md](./COMPLETE_API_SEQUENCE.md) - Master diagram with all services
+- Includes service-to-service communication patterns
+- Shows database interactions at each step
+- Displays async processing flows
+
+**Service Communication Pattern:**
+```
+Frontend → BFF (8080) → [Customer (8081), Policy (8085), Ingestion (8082)]
+                              ↓
+                    [Metadata (8083), Processing (8084), Matching (8086)]
+                              ↓
+                    [PostgreSQL (customer_db, policy_db, metadata_db), MongoDB (ingestion_db)]
+```
+
+**Key Sequence Highlights:**
+- ✅ JWT authentication flow with token validation
+- ✅ File upload with progress tracking (NEW: PATCH endpoints for status updates)
+- ✅ Async processing pipeline with metadata transformation
+- ✅ Fuzzy customer matching algorithm (Levenshtein distance)
+- ✅ Portfolio aggregation with multiple service calls
+- ✅ Coverage gap analysis with AI recommendations
+- ✅ Error handling and validation at each layer
+
+📖 **[View Complete Sequence Diagrams →](./COMPLETE_API_SEQUENCE.md)**
 
 ---
 

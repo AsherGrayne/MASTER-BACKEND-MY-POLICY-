@@ -1,6 +1,7 @@
 package com.mypolicy.customer.controller;
 
 import com.mypolicy.customer.dto.AuthResponse;
+import com.mypolicy.customer.dto.CustomerCorrectionRequest;
 import com.mypolicy.customer.dto.CustomerRegistrationRequest;
 import com.mypolicy.customer.dto.CustomerResponse;
 import com.mypolicy.customer.dto.LoginRequest;
@@ -29,8 +30,24 @@ public class CustomerController {
     return ResponseEntity.ok(customerService.login(request));
   }
 
+  @GetMapping("/by-pan/{panNumber}")
+  public ResponseEntity<CustomerResponse> getCustomerByPan(@PathVariable String panNumber) {
+    return ResponseEntity.ok(customerService.getCustomerByPanNumber(panNumber));
+  }
+
   @GetMapping("/{customerId}")
   public ResponseEntity<CustomerResponse> getCustomer(@PathVariable String customerId) {
     return ResponseEntity.ok(customerService.getCustomerById(customerId));
+  }
+
+  /**
+   * Correction/Patch API – update customer record (support/admin).
+   * Only non-null fields are updated. Reason is mandatory for audit.
+   */
+  @PatchMapping("/{customerId}")
+  public ResponseEntity<CustomerResponse> correctCustomer(
+      @PathVariable String customerId,
+      @Valid @RequestBody CustomerCorrectionRequest request) {
+    return ResponseEntity.ok(customerService.correctCustomer(customerId, request));
   }
 }

@@ -1,6 +1,7 @@
 package com.mypolicy.customer.service;
 
 import com.mypolicy.customer.dto.AuthResponse;
+import com.mypolicy.customer.dto.CustomerCorrectionRequest;
 import com.mypolicy.customer.dto.CustomerRegistrationRequest;
 import com.mypolicy.customer.dto.CustomerResponse;
 import com.mypolicy.customer.dto.LoginRequest;
@@ -11,4 +12,8 @@ public interface CustomerService {
   AuthResponse login(LoginRequest request);
 
   CustomerResponse getCustomerById(String customerId);
+
+  CustomerResponse getCustomerByPanNumber(String panNumber);
+
+  CustomerResponse correctCustomer(String customerId, CustomerCorrectionRequest request);
 }

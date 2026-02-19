@@ -17,9 +17,14 @@ public class ProcessingController {
   public ResponseEntity<String> triggerProcessing(
       @RequestParam String filePath,
       @RequestParam String insurerId,
-      @RequestParam String policyType) {
+      @RequestParam String policyType,
+      @RequestParam(value = "isCorrection", defaultValue = "false") boolean isCorrection) {
 
-    processingService.processFile(filePath, insurerId, policyType);
-    return ResponseEntity.ok("Processing started for file: " + filePath);
+    if (isCorrection) {
+      processingService.processCorrectionFile(filePath, insurerId);
+    } else {
+      processingService.processFile(filePath, insurerId, policyType);
+    }
+    return ResponseEntity.ok("Processing " + (isCorrection ? "correction" : "started") + " for file: " + filePath);
   }
 }

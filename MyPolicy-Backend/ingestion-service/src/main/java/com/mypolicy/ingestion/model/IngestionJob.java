@@ -18,6 +18,8 @@ public class IngestionJob {
 
   private String insurerId;
   private String filePath;
+  /** File type: "normal" (default) or "correction". Correction files trigger UPDATE instead of INSERT. */
+  private String fileType;
 
   @Indexed
   private IngestionStatus status;
@@ -33,12 +35,13 @@ public class IngestionJob {
   public IngestionJob() {
   }
 
-  public IngestionJob(String jobId, String insurerId, String filePath, IngestionStatus status,
-      int totalRecords, int processedRecords, String uploadedBy, String failureReason,
-      LocalDateTime createdAt, LocalDateTime updatedAt) {
+  public IngestionJob(String jobId, String insurerId, String filePath, String fileType,
+      IngestionStatus status, int totalRecords, int processedRecords, String uploadedBy,
+      String failureReason, LocalDateTime createdAt, LocalDateTime updatedAt) {
     this.jobId = jobId;
     this.insurerId = insurerId;
     this.filePath = filePath;
+    this.fileType = fileType != null ? fileType : "normal";
     this.status = status;
     this.totalRecords = totalRecords;
     this.processedRecords = processedRecords;
@@ -54,6 +57,8 @@ public class IngestionJob {
   public void setInsurerId(String insurerId) { this.insurerId = insurerId; }
   public String getFilePath() { return filePath; }
   public void setFilePath(String filePath) { this.filePath = filePath; }
+  public String getFileType() { return fileType; }
+  public void setFileType(String fileType) { this.fileType = fileType; }
   public IngestionStatus getStatus() { return status; }
   public void setStatus(IngestionStatus status) { this.status = status; }
   public int getTotalRecords() { return totalRecords; }

@@ -7,6 +7,8 @@ import com.mypolicy.ingestion.dto.UploadResponse;
 import com.mypolicy.ingestion.model.IngestionJob;
 import com.mypolicy.ingestion.model.IngestionStatus;
 import com.mypolicy.ingestion.repository.IngestionJobRepository;
+import com.mypolicy.ingestion.validation.InsurerSchemaValidator;
+import com.mypolicy.ingestion.validation.SchemaValidationResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,24 +37,41 @@ public class IngestionService {
   private static final long MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
 
   private final IngestionJobRepository jobRepository;
+  private final InsurerSchemaValidator schemaValidator;
 
-  public IngestionService(IngestionJobRepository jobRepository) {
+  public IngestionService(IngestionJobRepository jobRepository, InsurerSchemaValidator schemaValidator) {
     this.jobRepository = jobRepository;
+    this.schemaValidator = schemaValidator;
   }
 
   @Value("${ingestion.storage.path:storage/ingestion}")
   private String storageBasePath;
 
+  @Value("${ingestion.schema.validate:true}")
+  private boolean schemaValidationEnabled;
+
   /**
    * Upload file (Excel or CSV), persist to storage, create job record.
+   * @param fileType "correction" for delta/correction files (triggers UPDATE); "normal" (default) for new data.
    */
-  public UploadResponse uploadFile(MultipartFile file, String insurerId, String uploadedBy)
-      throws IOException {
+  public UploadResponse uploadFile(MultipartFile file, String insurerId, String uploadedBy,
+      String fileType) throws IOException {
 
     // 1. Validate file
     validateFile(file);
 
-    // 2. Generate jobId and save file
+    // 2. Detect file type: param, or filename *_correction.csv
+    String resolvedFileType = resolveFileType(fileType, file.getOriginalFilename());
+
+    // 3. Schema validation for normal files (skip for correction files)
+    if (schemaValidationEnabled && "normal".equals(resolvedFileType)) {
+      SchemaValidationResult schemaResult = schemaValidator.validate(file, insurerId);
+      if (!schemaResult.isValid()) {
+        throw new IllegalArgumentException(schemaResult.getErrorSummary());
+      }
+    }
+
+    // 4. Generate jobId and save file
     String jobId = UUID.randomUUID().toString();
     String extension = getFileExtension(file.getOriginalFilename());
     Path storagePath = Paths.get(storageBasePath);
@@ -65,12 +84,13 @@ public class IngestionService {
       Files.copy(inputStream, filePath);
     }
 
-    log.info("File uploaded: jobId={}, insurerId={}, path={}", jobId, insurerId,
-        filePath.toAbsolutePath());
+    log.info("File uploaded: jobId={}, insurerId={}, fileType={}, path={}", jobId, insurerId,
+        resolvedFileType, filePath.toAbsolutePath());
 
-    // 3. Create ingestion job
+    // 5. Create ingestion job
     IngestionJob job = new IngestionJob(jobId, insurerId, filePath.toAbsolutePath().toString(),
-        IngestionStatus.UPLOADED, 0, 0, uploadedBy, null, LocalDateTime.now(), LocalDateTime.now());
+        resolvedFileType, IngestionStatus.UPLOADED, 0, 0, uploadedBy, null,
+        LocalDateTime.now(), LocalDateTime.now());
 
     jobRepository.save(job);
 
@@ -87,8 +107,8 @@ public class IngestionService {
         .orElseThrow(() -> new IllegalArgumentException("Job not found: " + jobId));
 
     return new JobStatusResponse(job.getJobId(), job.getStatus(), job.getProcessedRecords(),
-        job.getTotalRecords(), job.getFilePath(), job.getInsurerId(), job.getCreatedAt(),
-        job.getUpdatedAt());
+        job.getTotalRecords(), job.getFilePath(), job.getInsurerId(), job.getFileType(),
+        job.getCreatedAt(), job.getUpdatedAt());
   }
 
   /**
@@ -183,6 +203,15 @@ public class IngestionService {
       return null;
     int lastDot = filename.lastIndexOf('.');
     return lastDot > 0 ? filename.substring(lastDot) : null;
+  }
+
+  /** Resolve fileType: use param if provided, else detect from filename (*_correction.csv). */
+  private String resolveFileType(String fileTypeParam, String filename) {
+    if (fileTypeParam != null && "correction".equalsIgnoreCase(fileTypeParam.trim()))
+      return "correction";
+    if (filename != null && filename.toLowerCase().contains("_correction"))
+      return "correction";
+    return "normal";
   }
 
   /**

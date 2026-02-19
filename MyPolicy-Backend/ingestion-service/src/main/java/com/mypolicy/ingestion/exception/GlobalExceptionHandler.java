@@ -1,5 +1,6 @@
 package com.mypolicy.ingestion.exception;
 
+import com.mongodb.MongoException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,14 @@ public class GlobalExceptionHandler {
     log.warn("State conflict: {}", ex.getMessage());
     return ResponseEntity.status(HttpStatus.CONFLICT)
         .body(Map.of("error", ex.getMessage()));
+  }
+
+  @ExceptionHandler(MongoException.class)
+  public ResponseEntity<Map<String, String>> handleMongoError(MongoException ex) {
+    log.error("MongoDB error: {}", ex.getMessage(), ex);
+    String msg = ex.getMessage() != null ? ex.getMessage() : "Database connection or operation failed";
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+        .body(Map.of("error", "Database error: " + msg));
   }
 
   @ExceptionHandler(RuntimeException.class)
